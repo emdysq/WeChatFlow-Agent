@@ -39,6 +39,7 @@
 - **写出能直接用的文章**：先明确读者问题、核心判断与证据边界，再写初稿；审稿不通过就直接改稿并复审，禁止编造作者经历。
 - **7 套写作人格**：像选主题一样选文风，从深夜老友到冷静分析师，一行配置切换。
 - **越用越像你**：编辑飞轮（学习你的修改）+ 范文风格库（SICO 式 few-shot）+ 阅读数据回填反哺选题。
+- **修改可以先审再用**：任务以 `proposal` 模式启动时，AI 改稿先生成 diff；用户可接受或拒绝，不直接覆盖成稿。
 - **18 主题排版引擎**：样式全内联、微信兼容修复、暗黑模式；`learn-theme` 还能从任意公众号文章学习一套新主题。
 - **一稿多发**：小红书图文 / 抖音口播稿，内容级真改，检查编辑质量和源稿相似度。
 - **成本可控**：可选把正文出稿路由给独立写作模型，实际费用取决于所选服务、模型和文章长度。
@@ -72,12 +73,37 @@
 
 ### 方式一：一键安装（推荐）
 
+macOS / Linux：
+
 ```bash
 git clone --depth 1 https://github.com/imraywang/wewrite.git ~/wewrite
 cd ~/wewrite && bash install.sh
 ```
 
 `install.sh` 做三件事：装 `wewrite` CLI（uv/pipx，无则回退 venv）、把 10 个 skill 链接到 `~/.claude/skills/` 与 `~/.agents/skills/`（检测到 OpenClaw / Codex 时一并链接其 skills 目录）、把旧版用户状态迁到 `~/.wewrite/`。
+
+Windows PowerShell：
+
+```powershell
+git clone --depth 1 https://github.com/imraywang/wewrite.git
+Set-Location .\wewrite
+.\install.ps1
+```
+
+`install.ps1` 使用独立虚拟环境安装 CLI、把 `wewrite*` skills 以目录联接方式安装到可用的
+Agent Skills 目录，并保存精确安装清单。脚本可重复执行，不覆盖同名的无关目录。卸载默认保留
+`~/.wewrite` 中的文章、配置和密钥：
+
+```powershell
+.\uninstall.ps1 -Confirm:$false
+```
+
+安装前或改代码后，可以运行完全离线的一键 Demo。它只做 Markdown 转换、微信 HTML 校验和
+写作质量评分，不读取公众号密钥、不发网络请求：
+
+```powershell
+.\scripts\demo.ps1
+```
 
 ### 方式二：skills.sh 按需挑模块
 
@@ -294,10 +320,14 @@ wewrite themes     # 列出主题名称
 
 ```bash
 wewrite preview article.md --theme sspai            # Markdown → 微信 HTML 预览
-wewrite publish article.md --cover cover.png --title "标题"   # 推送草稿箱
+wewrite publish article.md --cover cover.png --dry-run --dry-run-output publish-plan.json  # 无网络发布预检
+wewrite publish article.md --cover cover.png --title "标题" --confirm-publish  # 独立 CLI 推送草稿箱
 wewrite image-post p1.jpg p2.jpg -t "周末探店"       # 小绿书/图片帖（横滑轮播）
 wewrite score article.md --verbose                  # 写作质量评分（11 项检测）
 wewrite content-eval --draft draft.md --final article.md --assessment assessment.yaml --json # 编辑结果
+wewrite proposal show                            # 查看当前任务的改稿 diff
+wewrite proposal accept                         # 接受候选稿并复制为成稿
+wewrite proposal reject --reason "保留原结构"    # 拒绝且不修改成稿
 wewrite hotspots --limit 20                         # 抓热点
 wewrite search-articles "AI编程" -n 15 -t 2         # 搜公众号文章（-t 时间过滤，-r 解析直链）
 wewrite seo --json "AI大模型" "科技股"               # SEO 分析
@@ -311,6 +341,14 @@ wewrite sources add/list                            # 保存和查看事实来�
 wewrite home                                        # 查看状态目录
 wewrite migrate --from <旧仓库路径>                  # 从 v2.1 及更早版本迁移状态
 ```
+
+远程写入有确定性门禁：Agent 任务必须已经完成审稿、输入文件属于当前任务且持有一次性发布权限；
+权限在远程请求前即被消费，失败重试需要重新授权。脱离任务单独使用 CLI 时，必须显式添加
+`--confirm-publish`，让远程副作用出现在命令历史中。
+
+正式授权前可先运行 `publish --dry-run`。它不读取公众号密钥、不发网络请求，也不消费任务
+授权；输出包含标题、摘要字节数、正文长度、主题、封面、图片处理动作、HTML SHA-256、微信
+兼容性问题、内容阻断项和当前授权状态，可作为人工确认与测试证据。
 
 ## 🔄 工作流程
 

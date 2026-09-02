@@ -40,6 +40,15 @@ wewrite run step publish in_progress
 - 发布草稿必须有封面。没有封面不能假设微信会补默认图，改走本地预览。
 - 发布必须同时满足：`permissions.publish=true`、`flags.skip_publish=false`、用户本轮没有撤回。
 
+需要展示发布影响、排查配置或正式授权前确认时，先运行无网络预检：
+
+```bash
+wewrite publish {article} --cover {cover} --theme {theme} --dry-run --dry-run-output {plan_json}
+```
+
+Dry-run 不读取公众号密钥、不发网络请求、不消费授权。必须把其中的阻断项、HTML 指纹、图片
+动作和授权状态视为正式发布前的确定性证据。
+
 ## 动作
 
 始终先生成本地预览，有任务时保存到 `artifacts.preview`；任务外文章保存到原文件旁：
@@ -57,7 +66,9 @@ wewrite preview {article} --theme {theme} --no-open -o {preview}
 wewrite publish {article} --cover {cover} --theme {theme} --title "{title}" --digest "{digest}"
 ```
 
-发布失败时保留预览，不自动重试产生外部动作。有任务时更新 `publish.preview_html`；成功时再写
+CLI 会再次确定性检查任务已完成、审稿通过、输入属于当前任务且发布权限存在；检查通过后权限
+立即被消费为 `false`。发布失败时保留预览，不自动重试产生外部动作；如需重试，必须再次获得
+用户授权。有任务时更新 `publish.preview_html`；成功时再写
 `publish.media_id`，随后：
 
 ```bash
@@ -70,5 +81,5 @@ wewrite run step publish completed
 |---|---|
 | 看主题 | `wewrite gallery` |
 | 换主题 | 重新 preview；只有再次明确要求才重新 publish |
-| 做图片帖 | 先确认用户确实要推草稿箱，再执行 `wewrite image-post` |
+| 做图片帖 | 先确认用户确实要推草稿箱，再执行 `wewrite image-post ... --confirm-publish` |
 | 只排版 | 只 preview |

@@ -9,6 +9,7 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 import webbrowser
 from pathlib import Path
@@ -18,6 +19,12 @@ from .theme import load_theme, list_themes
 from .wechat_api import get_access_token, upload_image, upload_thumb
 from .publisher import create_draft, create_image_post
 from .config import load_config
+from ..publish_guard import (
+    PublishAuthorizationError,
+    authorize_publish,
+    inspect_publish_authorization,
+)
+from ..publish_plan import build_publish_plan
 
 
 def _print_validation(body_html: str) -> None:
@@ -68,15 +75,64 @@ def cmd_publish(args):
     theme_name = args.theme or cfg.get("theme", "professional-clean")
     author = args.author or wechat_cfg.get("author")
 
-    if not appid or not secret:
-        print("Error: --appid and --secret required (or set in config.yaml)", file=sys.stderr)
-        sys.exit(1)
-
     theme = load_theme(theme_name)
     converter = WeChatConverter(theme=theme)
     result = converter.convert_file(args.input)
+    title = args.title or result.title or Path(args.input).stem
+    digest = args.digest or result.digest
 
     _print_validation(result.html)
+
+    authorization_preview = inspect_publish_authorization(
+        args.input,
+        direct_confirmation=args.confirm_publish,
+    )
+    plan = build_publish_plan(
+        input_path=args.input,
+        title=title,
+        digest=digest,
+        theme=theme_name,
+        html=result.html,
+        image_sources=result.images,
+        cover_path=args.cover,
+        authorization=authorization_preview,
+    )
+
+    if args.dry_run:
+        payload = json.dumps(plan, ensure_ascii=False, indent=2)
+        if args.dry_run_output:
+            output_path = Path(args.dry_run_output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(payload + "\n", encoding="utf-8")
+            print(f"Dry-run plan: {output_path}")
+        else:
+            print(payload)
+        if not plan["content_ready"]:
+            sys.exit(2)
+        return
+
+    if not appid or not secret:
+        print("Error: --appid and --secret required (or set in config.yaml)", file=sys.stderr)
+        sys.exit(1)
+    if not plan["content_ready"]:
+        print("Error: publish preflight failed:", file=sys.stderr)
+        for blocker in plan["blockers"]:
+            print(f"  - {blocker}", file=sys.stderr)
+        sys.exit(2)
+
+    try:
+        authorization = authorize_publish(
+            args.input,
+            direct_confirmation=args.confirm_publish,
+        )
+    except PublishAuthorizationError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
+
+    if authorization["permission_consumed"]:
+        print(f"Publish permission consumed for run: {authorization['run_id']}")
+    else:
+        print("Standalone publish explicitly confirmed.")
 
     print(f"Title: {result.title}")
     print(f"Digest: {result.digest}")
@@ -86,28 +142,18 @@ def cmd_publish(args):
     token = get_access_token(appid, secret)
     print("Access token obtained.")
 
-    # Upload images referenced in article and replace src
-    # Resolve relative paths against the markdown file's directory
-    md_dir = Path(args.input).resolve().parent
+    # Upload images using the exact paths frozen by the local preflight plan.
     html = result.html
-    for img_src in result.images:
-        if img_src.startswith(("http://", "https://")):
-            print(f"Skipping remote image: {img_src}")
+    for image in plan["images"]:
+        img_src = image["source"]
+        if image["kind"] == "remote":
+            print(f"Keeping remote image: {img_src}")
             continue
 
-        # Try: absolute → relative to CWD → relative to markdown file
-        img_path = Path(img_src)
-        if not img_path.is_absolute():
-            if not img_path.exists():
-                img_path = md_dir / img_src
-
-        if img_path.exists():
-            print(f"Uploading image: {img_src}")
-            wechat_url = upload_image(token, str(img_path))
-            html = html.replace(img_src, wechat_url)
-            print(f"  -> {wechat_url}")
-        else:
-            print(f"Warning: image not found: {img_src} (searched {md_dir})")
+        print(f"Uploading image: {img_src}")
+        wechat_url = upload_image(token, image["resolved_path"])
+        html = html.replace(img_src, wechat_url)
+        print(f"  -> {wechat_url}")
 
     # Upload cover image if provided
     thumb_media_id = None
@@ -117,8 +163,6 @@ def cmd_publish(args):
         print(f"  -> media_id: {thumb_media_id}")
 
     # Create draft
-    title = args.title or result.title or Path(args.input).stem
-    digest = args.digest or result.digest
     draft = create_draft(
         access_token=token,
         title=title,
@@ -150,6 +194,12 @@ def cmd_image_post(args):
     if not appid or not secret:
         print("Error: --appid and --secret required (or set in config.yaml)", file=sys.stderr)
         sys.exit(1)
+    if not args.confirm_publish:
+        print(
+            "Error: remote image-post write requires --confirm-publish",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     images = args.images
     if not images:
@@ -385,6 +435,20 @@ def main():
     p_publish.add_argument("--title", help="Override article title")
     p_publish.add_argument("--author", default=None, help="Article author")
     p_publish.add_argument("--digest", default=None, help="Override article digest (≤120 UTF-8 bytes)")
+    p_publish.add_argument(
+        "--confirm-publish",
+        action="store_true",
+        help="显式确认独立 CLI 远程写入；任务模式优先使用 run permission",
+    )
+    p_publish.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="只生成发布预检计划，不读取密钥、不发网络请求、不消费授权",
+    )
+    p_publish.add_argument(
+        "--dry-run-output",
+        help="把 dry-run JSON 写入指定路径",
+    )
 
     # themes
     sub.add_parser("themes", help="List available themes")
@@ -396,6 +460,11 @@ def main():
     p_imgpost.add_argument("-c", "--content", default="", help="Plain text description (max ~1000 chars)")
     p_imgpost.add_argument("--appid", default=None, help="WeChat AppID")
     p_imgpost.add_argument("--secret", default=None, help="WeChat AppSecret")
+    p_imgpost.add_argument(
+        "--confirm-publish",
+        action="store_true",
+        help="显式确认创建远程图片草稿",
+    )
 
     # gallery
     p_gallery = sub.add_parser("gallery", help="Open theme gallery in browser")

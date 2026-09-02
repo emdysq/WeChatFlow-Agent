@@ -286,10 +286,13 @@ def test_v2_run_is_upgraded_for_current_artifacts(tmp_path, monkeypatch):
     state_path.write_text(yaml.safe_dump(legacy, allow_unicode=True), encoding="utf-8")
 
     upgraded = load_run(run["run_id"])
-    assert upgraded["version"] == 4
+    assert upgraded["version"] == 5
+    assert upgraded["collaboration"]["review_mode"] == "auto"
     assert upgraded["artifacts"]["brief"].endswith("brief.yaml")
     assert upgraded["artifacts"]["claims"].endswith("claims.yaml")
     assert upgraded["artifacts"]["draft"].endswith("draft.md")
+    assert upgraded["artifacts"]["proposal"].endswith("proposal.md")
+    assert upgraded["artifacts"]["proposal_record"].endswith("proposal.json")
     assert upgraded["artifacts"]["review_report"].endswith("review-report.json")
     assert upgraded["artifacts"]["illustrated_article"].endswith("article-illustrated.md")
     assert upgraded["artifacts"]["image_prompts"].endswith("image-prompts.md")

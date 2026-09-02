@@ -15,6 +15,7 @@ _COMMANDS = {
     "diagnose": ("wewrite.commands.diagnose", "环境 + 配置自检（降级标记 JSON）"),
     "score": ("wewrite.commands.humanness_score", "写作质量评分（11 项检测）"),
     "content-eval": ("wewrite.commands.content_eval", "汇总编辑判断与初稿修改幅度"),
+    "proposal": ("wewrite.commands.proposal_manager", "可查看、接受或拒绝的改稿提案"),
     "hotspots": ("wewrite.commands.fetch_hotspots", "多平台热点抓取"),
     "search-articles": ("wewrite.commands.search_articles", "搜狗微信搜索公众号文章"),
     "seo": ("wewrite.commands.seo_keywords", "SEO 关键词分析"),
@@ -37,6 +38,28 @@ _COMMANDS = {
 _TOOLKIT_PASSTHROUGH = {"preview", "publish", "gallery", "themes", "image-post"}
 
 
+def _configure_utf8_stdio() -> None:
+    """Keep Chinese CLI output usable under non-UTF-8 Windows locales.
+
+    Some Windows hosts expose stdout/stderr as a legacy code page (for
+    example cp932).  Printing normal Chinese diagnostics then raises
+    ``UnicodeEncodeError`` after the command has already done its work.  A
+    CLI should also emit deterministic UTF-8 when its output is redirected,
+    so configure both streams at the process boundary when supported.
+    """
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        reconfigure = getattr(stream, "reconfigure", None)
+        if not callable(reconfigure):
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            # Test runners and embedded hosts may expose immutable wrappers.
+            # Their own capture layer is responsible for encoding in that case.
+            continue
+
+
 def _usage() -> str:
     lines = [f"wewrite {__version__} — 公众号内容管道 CLI（状态目录: {home()}）", "", "用法: wewrite <命令> [参数…]", "", "命令:"]
     for name, (_, desc) in _COMMANDS.items():
@@ -53,6 +76,7 @@ def _usage() -> str:
 
 
 def main() -> None:
+    _configure_utf8_stdio()
     argv = sys.argv[1:]
     if not argv or argv[0] in {"-h", "--help"}:
         print(_usage())

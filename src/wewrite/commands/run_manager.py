@@ -37,6 +37,7 @@ def main(argv=None):
     start.add_argument("--max-images", type=int, default=4)
     start.add_argument("--max-image-cost", type=float)
     start.add_argument("--allow-publish", action="store_true")
+    start.add_argument("--review-mode", choices=["auto", "proposal"], default="auto")
 
     show = sub.add_parser("show", help="查看任务")
     show.add_argument("run_id", nargs="?")
@@ -76,6 +77,7 @@ def main(argv=None):
                 max_images=args.max_images,
                 max_image_cost=args.max_image_cost,
                 allow_publish=args.allow_publish,
+                review_mode=args.review_mode,
             )
         elif args.action == "show":
             state = load_run(args.run_id)

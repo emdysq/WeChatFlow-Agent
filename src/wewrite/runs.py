@@ -24,6 +24,8 @@ PROTECTED_ARTIFACTS = {
     "brief",
     "claims",
     "draft",
+    "proposal",
+    "proposal_record",
     "illustrated_article",
     "image_prompts",
     "images_manifest",
@@ -116,6 +118,7 @@ def create_run(
     max_images: int = 4,
     max_image_cost: float | None = None,
     allow_publish: bool = False,
+    review_mode: str = "auto",
 ) -> dict:
     ensure_home()
     if mode not in RUN_MODES:
@@ -128,6 +131,8 @@ def create_run(
         raise ValueError("max_images must be between 0 and 10")
     if max_image_cost is not None and max_image_cost < 0:
         raise ValueError("max_image_cost must be non-negative")
+    if review_mode not in {"auto", "proposal"}:
+        raise ValueError("review_mode must be auto or proposal")
     if mode == "publish":
         allow_publish = True
 
@@ -136,13 +141,14 @@ def create_run(
     directory.mkdir(parents=True, exist_ok=False)
     created = _now()
     state = {
-        "version": 4,
+        "version": 5,
         "run_id": run_id,
         "created": created,
         "updated": created,
         "status": "active",
         "mode": mode,
         "permissions": {"publish": bool(allow_publish)},
+        "collaboration": {"review_mode": review_mode},
         "visual": {
             "mode": visual_mode,
             "max_images": max_images,
@@ -159,6 +165,8 @@ def create_run(
             "brief": str((directory / "brief.yaml").relative_to(home())),
             "claims": str((directory / "claims.yaml").relative_to(home())),
             "draft": str((directory / "draft.md").relative_to(home())),
+            "proposal": str((directory / "proposal.md").relative_to(home())),
+            "proposal_record": str((directory / "proposal.json").relative_to(home())),
             "illustrated_article": str((directory / "article-illustrated.md").relative_to(home())),
             "image_prompts": str((directory / "image-prompts.md").relative_to(home())),
             "images_manifest": str((directory / "images.json").relative_to(home())),
@@ -210,18 +218,24 @@ def _upgrade_state(state: dict) -> bool:
         "brief": str((directory / "brief.yaml").relative_to(home())),
         "claims": str((directory / "claims.yaml").relative_to(home())),
         "draft": str((directory / "draft.md").relative_to(home())),
+        "proposal": str((directory / "proposal.md").relative_to(home())),
+        "proposal_record": str((directory / "proposal.json").relative_to(home())),
         "illustrated_article": str((directory / "article-illustrated.md").relative_to(home())),
         "image_prompts": str((directory / "image-prompts.md").relative_to(home())),
         "images_manifest": str((directory / "images.json").relative_to(home())),
         "review_report": str((directory / "review-report.json").relative_to(home())),
     }
     changed = False
+    collaboration = state.setdefault("collaboration", {})
+    if not collaboration.get("review_mode"):
+        collaboration["review_mode"] = "auto"
+        changed = True
     for key, value in expected.items():
         if not artifacts.get(key):
             artifacts[key] = value
             changed = True
-    if state.get("version", 1) < 4:
-        state["version"] = 4
+    if state.get("version", 1) < 5:
+        state["version"] = 5
         changed = True
     return changed
 
@@ -360,6 +374,15 @@ def finish_run(patch: dict | None = None, run_id: str | None = None) -> dict:
     article_path = home() / article_rel if article_rel else None
     if not article_path or not article_path.is_file() or not article_path.read_text(encoding="utf-8").strip():
         raise ValueError("Cannot finish run before a non-empty article is saved")
+    if (state.get("collaboration") or {}).get("review_mode") == "proposal":
+        proposal_rel = (state.get("artifacts") or {}).get("proposal_record")
+        proposal_path = home() / proposal_rel if proposal_rel else None
+        try:
+            proposal = json.loads(proposal_path.read_text(encoding="utf-8")) if proposal_path else {}
+        except (OSError, json.JSONDecodeError):
+            proposal = {}
+        if proposal.get("status") != "accepted":
+            raise ValueError("Proposal review mode requires an accepted proposal")
     draft_rel = (state.get("artifacts") or {}).get("draft")
     draft_path = home() / draft_rel if draft_rel else None
     if draft_path and draft_path.is_file() and draft_path.read_text(encoding="utf-8").strip():

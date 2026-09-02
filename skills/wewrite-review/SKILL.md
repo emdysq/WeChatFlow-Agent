@@ -16,7 +16,9 @@ allowed-tools:
 
 用户指定文章时检查该文件；否则运行 `wewrite run show`，优先读取 `artifacts.draft`，并读取
 `artifacts.brief`、`artifacts.claims` 和 `artifacts.sources`。旧任务没有初稿产物时才回退
-`artifacts.article`。管道内先运行 `wewrite run step review in_progress`。
+`artifacts.article`。同时读取 `collaboration.review_mode`：默认 `auto` 直接生成成稿；
+`proposal` 表示先生成修改提案，等用户接受后再写入成稿。管道内先运行
+`wewrite run step review in_progress`。
 
 完整读取：
 
@@ -54,7 +56,10 @@ claim，结尾是否交付 `goal.takeaway/action`。无关段落删除，不用�
 - `needs_input`：仅限用户明确要求个人故事而材料不足且无法安全换框架。
 
 最多两轮。第二轮仍有问题时，删掉不可靠内容、缩小承诺，生成能通过的可靠版本；不得给未
-通过的文章贴上“可交付”。通过后把最终正文写入 `artifacts.article`。
+通过的文章贴上“可交付”。通过后的保存位置取决于审阅模式：
+
+- `auto`：把最终正文写入 `artifacts.article`。
+- `proposal`：把最终正文写入 `artifacts.proposal`，不要直接覆盖 `artifacts.article`。
 
 ### 4. 标题、摘要与工具提示
 
@@ -82,14 +87,27 @@ major_issues: []
 notes: ""
 ```
 
-再生成 `artifacts.review_report`：
+再生成 `artifacts.review_report`。下面的 `{final_path}` 在自动模式是 `artifacts.article`，在
+提案模式是 `artifacts.proposal`：
 
 ```bash
-wewrite content-eval --draft {draft_path} --final {article_path} \
+wewrite content-eval --draft {draft_path} --final {final_path} \
   --assessment {assessment_path} --output {review_report_path} --json
 ```
 
-只有报告里的 `publishable=true` 才能完成审稿。更新任务并标记完成：
+只有报告里的 `publishable=true` 才能继续。
+
+提案模式先创建并展示 diff：
+
+```bash
+wewrite proposal create --summary "本轮主要修改"
+```
+
+向用户说明主要变化并等待“接受”或“拒绝”。接受后运行 `wewrite proposal accept`，候选稿会
+复制到 `artifacts.article`；拒绝后运行 `wewrite proposal reject --reason "..."`，不要标记
+审稿完成。自动模式无需这一步。
+
+自动模式写入成稿后，或提案被接受后，再更新任务并标记完成：
 
 ```bash
 wewrite run update --patch '{"editorial":{"decision":"pass","pass_number":1,"publishable":true},"seo":{"title":"...","alt_titles":[],"digest":"...","tags":[],"quality_score":0},"provenance":{"verified_sources":0,"unverified_sources":0}}'
