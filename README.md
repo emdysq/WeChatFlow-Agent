@@ -44,6 +44,8 @@
 - **一稿多发**：小红书图文 / 抖音口播稿，内容级真改，检查编辑质量和源稿相似度。
 - **成本可控**：可选把正文出稿路由给独立写作模型，实际费用取决于所选服务、模型和文章长度。
 
+本分支的二次开发范围、真实验证证据和面试讲解见 [PROJECT_CASE_STUDY.md](PROJECT_CASE_STUDY.md)。
+
 ## 👀 效果预览
 
 同一篇示例文章（[docs/demo-article.md](https://github.com/imraywang/wewrite/blob/main/docs/demo-article.md)）× 6 个主题，`wewrite preview` 真实渲染长图（含 label 小标签、steps 步骤卡、callout / timeline / quote / summary 组件与 AIGC 声明脚注）：
