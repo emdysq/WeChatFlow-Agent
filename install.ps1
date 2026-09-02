@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-Install WeWrite CLI and Agent Skills on Windows.
+Install WeChatFlow Agent CLI and Agent Skills on Windows.
 
 .DESCRIPTION
 Creates a dedicated virtual environment under LocalAppData, adds its launcher
@@ -101,15 +101,17 @@ if (-not $SkipCli) {
         if ($LASTEXITCODE -ne 0) { throw "Failed to create virtual environment" }
     }
     $venvPython = Join-Path $venvDir "Scripts\python.exe"
-    Write-Host "→ Installing WeWrite from $repo"
+    Write-Host "→ Installing WeChatFlow Agent from $repo"
     & $venvPython -m pip install --disable-pip-version-check --quiet -e $repo
     if ($LASTEXITCODE -ne 0) { throw "Failed to install WeWrite" }
     New-Item -ItemType Directory -Force -Path $launcherDir | Out-Null
-    $launcher = Join-Path $launcherDir "wewrite.cmd"
-    $launcherText = "@echo off" + [Environment]::NewLine +
-        [char]34 + (Join-Path $venvDir "Scripts\wewrite.exe") + [char]34 + " %*" +
-        [Environment]::NewLine
-    [System.IO.File]::WriteAllText($launcher, $launcherText, [System.Text.Encoding]::ASCII)
+    foreach ($commandName in @("wechatflow", "wewrite")) {
+        $launcher = Join-Path $launcherDir "$commandName.cmd"
+        $launcherText = "@echo off" + [Environment]::NewLine +
+            [char]34 + (Join-Path $venvDir "Scripts\$commandName.exe") + [char]34 + " %*" +
+            [Environment]::NewLine
+        [System.IO.File]::WriteAllText($launcher, $launcherText, [System.Text.Encoding]::ASCII)
+    }
     if (-not $NoPathUpdate) {
         if (Add-UserPathEntry -Entry $launcherDir) {
             Write-Host "✓ Added to user PATH: $launcherDir"
@@ -118,7 +120,7 @@ if (-not $SkipCli) {
             $env:Path = "$launcherDir;$env:Path"
         }
     }
-    Write-Host "✓ CLI ready: $launcher"
+    Write-Host "✓ CLI ready: $(Join-Path $launcherDir 'wechatflow.cmd')"
 }
 
 if (-not $SkipSkills) {
@@ -168,6 +170,6 @@ $manifest = [ordered]@{
 }
 $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 Write-Host ""
-Write-Host "✓ WeWrite Windows installation complete"
+Write-Host "✓ WeChatFlow Agent Windows installation complete"
 Write-Host "  Manifest: $manifestPath"
 Write-Host "  State:    $(Join-Path $HOME '.wewrite') (not modified by uninstall)"

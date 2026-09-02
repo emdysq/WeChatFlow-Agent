@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wewrite"
+name = "wechatflow-agent"
 dynamic = ["version"]
-description = "微信公众号内容管道的确定性工具层：写作质量评分、排版转换、微信API、生图、混合路由写作"
+description = "WeChatFlow Agent：可审阅改稿、Windows 交付与微信公众号草稿工作流"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -24,10 +24,11 @@ dependencies = [
 browser = ["playwright>=1.50", "camoufox[geoip]>=0.4"]
 
 [project.urls]
-Repository = "https://github.com/imraywang/wewrite"
+Repository = "https://github.com/emdysq/WeChatFlow-Agent"
 
 [project.scripts]
 wewrite = "wewrite.cli:main"
+wechatflow = "wewrite.cli:main"
 
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}

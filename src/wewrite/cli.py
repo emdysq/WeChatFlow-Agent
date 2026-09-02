@@ -61,7 +61,7 @@ def _configure_utf8_stdio() -> None:
 
 
 def _usage() -> str:
-    lines = [f"wewrite {__version__} — 公众号内容管道 CLI（状态目录: {home()}）", "", "用法: wewrite <命令> [参数…]", "", "命令:"]
+    lines = [f"WeChatFlow Agent {__version__} — 公众号内容工作流（状态目录: {home()}）", "", "用法: wechatflow <命令> [参数…]（兼容 wewrite）", "", "命令:"]
     for name, (_, desc) in _COMMANDS.items():
         lines.append(f"  {name:<16}{desc}")
     for name in sorted(_TOOLKIT_PASSTHROUGH):

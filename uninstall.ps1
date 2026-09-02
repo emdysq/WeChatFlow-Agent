@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-Remove components created by install.ps1 while preserving user state.
+Remove WeChatFlow Agent components created by install.ps1 while preserving user state.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = "High")]
 param(
@@ -57,4 +57,4 @@ if ($RemoveState) {
 } else {
     Write-Host "✓ Preserved user state: $(Join-Path $HOME '.wewrite')"
 }
-Write-Host "✓ WeWrite Windows components removed"
+Write-Host "✓ WeChatFlow Agent Windows components removed"
