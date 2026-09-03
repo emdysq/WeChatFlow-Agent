@@ -11,6 +11,12 @@ Environment variable mapping:
     WEWRITE_IMAGE_PROVIDER → image.provider
     WEWRITE_IMAGE_API_KEY  → image.api_key
     WEWRITE_IMAGE_MODEL    → image.model
+    WEWRITE_WRITER_PROVIDER → writer.provider
+    WEWRITE_WRITER_API_KEY  → writer.api_key
+    WEWRITE_WRITER_BASE_URL → writer.base_url
+    WEWRITE_WRITER_MODEL    → writer.model
+    WEWRITE_REVIEWER_MODEL  → writer.reviewer_model
+    WEWRITE_VISION_MODEL    → writer.vision_model
     WEWRITE_THEME          → theme
 """
 
@@ -33,6 +39,12 @@ _ENV_OVERRIDES = {
     ("image", "provider"): "WEWRITE_IMAGE_PROVIDER",
     ("image", "api_key"): "WEWRITE_IMAGE_API_KEY",
     ("image", "model"): "WEWRITE_IMAGE_MODEL",
+    ("writer", "provider"): "WEWRITE_WRITER_PROVIDER",
+    ("writer", "api_key"): "WEWRITE_WRITER_API_KEY",
+    ("writer", "base_url"): "WEWRITE_WRITER_BASE_URL",
+    ("writer", "model"): "WEWRITE_WRITER_MODEL",
+    ("writer", "reviewer_model"): "WEWRITE_REVIEWER_MODEL",
+    ("writer", "vision_model"): "WEWRITE_VISION_MODEL",
     ("theme",): "WEWRITE_THEME",
 }
 

@@ -1,6 +1,6 @@
 # WeWrite → WeChatFlow 开源构建审计基线
 
-更新时间：2026-09-02
+更新时间：2026-09-03
 上游：`imraywang/wewrite`
 上游基线：`bbf6d1a`
 本地分支：`feat/wechatflow-customization`
@@ -25,7 +25,7 @@ WeWrite 不是传统 Web SaaS，而是面向 Codex、Claude Code 等 Agent 的�
 
 - 使用 Python 3.12 创建独立 `.venv` 并以 editable 模式安装。
 - 上游原始测试：`112 passed`。
-- 修改后完整测试：`131 passed`。
+- 修改后完整测试：`139 passed`。
 - 上下文预算门：通过，首次运行静态文档约 6,389 tokens。
 - 18 套主题：能够正常发现和加载。
 - `docs/demo-article.md`：成功转换为本地 HTML。
@@ -45,6 +45,7 @@ WeWrite 不是传统 Web SaaS，而是面向 Codex、Claude Code 等 Agent 的�
 ### Runtime 层
 
 `src/wewrite/cli.py` 是统一命令入口；`commands/` 管理诊断、任务、来源、质量、检索与学习；
+`model_client.py`、`material_ingest.py` 和 `compose_pipeline.py` 负责兼容模型、素材摄取与一键出稿；
 `toolkit/` 管理 Markdown 转换、主题、图片 Provider 和微信 API。
 
 ### State 层
@@ -108,14 +109,18 @@ Prompt 规则不能构成可靠的安全边界。
   密钥、不联网的 `scripts/demo.ps1`；已在隔离目录真实跑通安装 → CLI → 卸载。
 - 可审阅修改提案：任务可用 `--review-mode proposal` 启动，候选稿生成 unified diff；用户可
   `accept` 后复制为成稿，或 `reject` 后保留原文。按产品取舍保持简单，不做哈希或冲突校验。
+- 一键 AI 出稿：新增 `compose`，支持常见文档与图片素材、DeepSeek/兼容模型、结构化任务书、
+  两轮审稿、一次自动修改、用户图片插入和微信 HTML 预览；端到端 Mock 已通过，真实 DeepSeek
+  Smoke Test 需用户在本机配置 API Key 后执行。
 
 ## 6. 建议的功能扩展边界
 
-求职版本只做三条主线：
+求职版本聚焦四条主线：
 
 1. **Windows/FDE 交付**：可重复安装、诊断和一键本地 Demo。
 2. **安全发布闭环**：一次性授权、Dry-run、Mock 集成测试、真实 Canary 证据。
 3. **可审阅 Agent 协作**：把 draft → final 的变化呈现为可接受/拒绝的修改建议。
+4. **多模态一键出稿**：主题与用户素材 → 规划 → 写作 → 审稿 → 成稿 → 微信预览。
 
 暂不开发账号系统、云端多租户、复杂桌面客户端、多 Agent 平台或完整 CMS。
 

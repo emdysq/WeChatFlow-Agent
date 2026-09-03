@@ -4,12 +4,12 @@
 
 **从选题、写作、审稿到公众号草稿箱的可审阅 Agent 内容工作流**
 
-Windows 交付 · 任务级状态 · 修改提案 · 18 套主题 · 微信草稿 · 131 项测试
+Windows 交付 · 一键 AI 出稿 · 修改提案 · 18 套主题 · 微信草稿 · 139 项测试
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2563eb)](LICENSE)
 [![CI](https://github.com/emdysq/WeChatFlow-Agent/actions/workflows/checks.yml/badge.svg)](https://github.com/emdysq/WeChatFlow-Agent/actions/workflows/checks.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-0f766e)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-131%20passed-16a34a)](tests)
+[![Tests](https://img.shields.io/badge/tests-139%20passed-16a34a)](tests)
 [![Canary](https://img.shields.io/badge/WeChat%20draft-canary%20passed-07c160)](WECHAT_CANARY_CHECKLIST.md)
 
 </div>
@@ -61,6 +61,23 @@ article.md
 preview.html
 草稿 media_id（仅本地状态）
 ```
+
+### 主题 + 素材 + 图片一键出稿
+
+配置 DeepSeek 或其他 OpenAI-compatible 模型后，可以把一个主题、素材目录和图片直接交给
+统一编排命令。系统依次完成素材摄取、图片理解、任务书、初稿、自动审稿、一次修改和微信
+HTML 预览；默认不生图、不创建公众号草稿：
+
+```powershell
+wechatflow compose `
+  --topic "普通人应该如何使用 AI Agent" `
+  --material .\materials `
+  --image .\images\workflow.png `
+  --theme professional-clean
+```
+
+支持 Markdown、TXT、HTML、JSON、YAML、CSV、PDF、DOCX，以及 JPEG、PNG、GIF、WebP。
+完整开发范围和验收标准见 [一键出稿开发计划](docs/compose-development-plan.md)。
 
 ## 我完成的关键能力
 
@@ -129,7 +146,7 @@ Demo 不读取公众号密钥、不联网，依次执行 Markdown 转换、微�
 | 项目 | 结果 |
 |---|---|
 | 上游测试基线 | 112 passed |
-| 当前完整回归 | 131 passed |
+| 当前完整回归 | 139 passed |
 | Windows 生命周期 | install → CLI → uninstall passed |
 | 微信 API Mock | token → 图片 → 封面 → draft/add passed |
 | 真实公众号 Canary | 草稿创建成功，后台人工验收通过 |
@@ -199,6 +216,7 @@ $WEWRITE_HOME / ~/.wewrite
 
 ```powershell
 wechatflow diagnose
+wechatflow compose --topic "主题" --material .\materials --image .\cover.png
 wechatflow run start --topic "主题"
 wechatflow score article.md --json
 wechatflow content-eval --draft draft.md --final article.md --assessment assessment.yaml --json
@@ -233,6 +251,18 @@ wechatflow gallery
 Copy-Item config.example.yaml "$HOME\.wewrite\config.yaml"
 ```
 
+一键出稿需要单独配置写作模型。DeepSeek 默认配置为：
+
+```yaml
+writer:
+  provider: deepseek
+  api_key: "在本机填写"
+  base_url: "https://api.deepseek.com"
+  model: "deepseek-v4-flash"
+  reviewer_model: "deepseek-v4-pro"
+  vision_model: "deepseek-v4-flash-vision-exp"
+```
+
 不要把密钥写入 Git、README、Issue 或聊天记录。
 
 ## 项目材料
@@ -245,6 +275,7 @@ Copy-Item config.example.yaml "$HOME\.wewrite\config.yaml"
 ## 当前边界
 
 - 已验证本地内容管道、Windows 交付、改稿提案、Mock 微信链路和真实草稿创建。
+- 一键出稿已通过端到端 Mock；真实 DeepSeek 出稿需在本机配置 API Key 后完成 Smoke Test。
 - 没有统一 Web 工作台。
 - 没有真实用户增长指标。
 - 没有验证正式发表、群发或草稿更新。

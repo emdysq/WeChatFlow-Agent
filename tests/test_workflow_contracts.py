@@ -75,6 +75,19 @@ def test_diagnose_accepts_multi_provider_image_config(tmp_path, monkeypatch):
     assert diagnose.runtime_flags(checks)["skip_image_gen"] is False
 
 
+def test_diagnose_accepts_writer_config_file(tmp_path, monkeypatch):
+    path = tmp_path / "config.yaml"
+    path.write_text(
+        yaml.safe_dump({"writer": {"provider": "deepseek", "api_key": "local-key"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(diagnose.paths, "config_path", lambda: path)
+    checks = diagnose.check_config()
+    writer_check = next(c for c in checks if c["name"] == "writer_api_key")
+    assert writer_check["status"] == "pass"
+    assert diagnose.runtime_flags(checks)["use_writer_model"] is True
+
+
 def test_missing_style_requires_onboard_without_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(diagnose.paths, "style_path", lambda: tmp_path / "missing.yaml")
     checks = diagnose.check_style()
@@ -286,7 +299,7 @@ def test_v2_run_is_upgraded_for_current_artifacts(tmp_path, monkeypatch):
     state_path.write_text(yaml.safe_dump(legacy, allow_unicode=True), encoding="utf-8")
 
     upgraded = load_run(run["run_id"])
-    assert upgraded["version"] == 5
+    assert upgraded["version"] == 6
     assert upgraded["collaboration"]["review_mode"] == "auto"
     assert upgraded["artifacts"]["brief"].endswith("brief.yaml")
     assert upgraded["artifacts"]["claims"].endswith("claims.yaml")
@@ -294,6 +307,8 @@ def test_v2_run_is_upgraded_for_current_artifacts(tmp_path, monkeypatch):
     assert upgraded["artifacts"]["proposal"].endswith("proposal.md")
     assert upgraded["artifacts"]["proposal_record"].endswith("proposal.json")
     assert upgraded["artifacts"]["review_report"].endswith("review-report.json")
+    assert upgraded["artifacts"]["materials"].endswith("materials.md")
+    assert upgraded["artifacts"]["compose_report"].endswith("compose-report.json")
     assert upgraded["artifacts"]["illustrated_article"].endswith("article-illustrated.md")
     assert upgraded["artifacts"]["image_prompts"].endswith("image-prompts.md")
     assert upgraded["artifacts"]["images_manifest"].endswith("images.json")

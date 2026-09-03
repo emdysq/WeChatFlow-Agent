@@ -19,16 +19,17 @@ brief 文件由编排 agent 写好：选题 / 框架 / **真实素材锚点** / 
     WEWRITE_WRITER_API_KEY      写作模型 key（缺省则退出码 3）
     WEWRITE_WRITER_PROVIDER     deepseek|openai|…（默认 deepseek，仅作标识；走 OpenAI 兼容协议）
     WEWRITE_WRITER_BASE_URL     默认 https://api.deepseek.com
-    WEWRITE_WRITER_MODEL        默认 deepseek-chat
-    WEWRITE_WRITER_TEMPERATURE  默认 1.0（保留表达变化，但别太高以免编造事实）
-    WEWRITE_WRITER_MAX_TOKENS   默认 4000
+    WEWRITE_WRITER_MODEL        默认 deepseek-v4-flash
+    WEWRITE_WRITER_TEMPERATURE  可选；DeepSeek thinking 模式会忽略
+    WEWRITE_WRITER_MAX_TOKENS   默认 6000
 """
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
+
+from ..model_client import ModelConfigurationError, ModelSettings, OpenAICompatibleClient
 
 _ANTI_AI_FALLBACK = """你是资深中文公众号编辑。只使用 brief 提供的事实、数据、案例和个人经历，绝不补写未提供的亲历、数字、引述或身份。明确区分事实、推断和个人意见。文章要有清楚的核心判断、对读者有用的具体内容，并符合 brief 给出的账号声音。语言直接自然，删除套话、重复和无效标题；不要为了显得像人而刻意制造碎句、负面情绪、网络黑话或离题段落。"""
 
@@ -48,39 +49,37 @@ def _anti_ai_system() -> str:
 
 
 def _load_config() -> dict:
-    key = os.environ.get("WEWRITE_WRITER_API_KEY", "").strip()
-    if not key:
-        print("WRITER_NOT_CONFIGURED: 未配置 WEWRITE_WRITER_API_KEY", file=sys.stderr)
+    try:
+        settings = ModelSettings.from_config()
+    except ModelConfigurationError as exc:
+        print(f"WRITER_NOT_CONFIGURED: {exc}", file=sys.stderr)
         sys.exit(3)
     return {
-        "provider": os.environ.get("WEWRITE_WRITER_PROVIDER", "deepseek"),
-        "key": key,
-        "base_url": os.environ.get("WEWRITE_WRITER_BASE_URL", "https://api.deepseek.com").rstrip("/"),
-        "model": os.environ.get("WEWRITE_WRITER_MODEL", "deepseek-chat"),
-        "temperature": float(os.environ.get("WEWRITE_WRITER_TEMPERATURE", "1.0")),
-        "max_tokens": int(os.environ.get("WEWRITE_WRITER_MAX_TOKENS", "4000")),
+        "provider": settings.provider,
+        "key": settings.api_key,
+        "base_url": settings.base_url,
+        "model": settings.model,
+        "temperature": settings.temperature,
+        "max_tokens": settings.max_tokens,
+        "timeout_seconds": settings.timeout_seconds,
     }
 
 
 def call_writer(cfg: dict, system: str, user: str) -> tuple[str, dict]:
     """调 OpenAI 兼容的 /chat/completions（DeepSeek / OpenAI 同构）。返回 (正文, usage)。"""
-    import requests  # 容器/服务器内有；本地拦截环境只在真调时才 import
-
-    resp = requests.post(
-        cfg["base_url"] + "/chat/completions",
-        headers={"Authorization": f"Bearer {cfg['key']}", "Content-Type": "application/json"},
-        json={
-            "model": cfg["model"],
-            "messages": [{"role": "system", "content": system},
-                         {"role": "user", "content": user}],
-            "temperature": cfg["temperature"],
-            "max_tokens": cfg["max_tokens"],
-        },
-        timeout=180,
+    settings = ModelSettings(
+        provider=cfg["provider"],
+        api_key=cfg["key"],
+        base_url=cfg["base_url"],
+        model=cfg["model"],
+        reviewer_model=cfg["model"],
+        vision_model="",
+        timeout_seconds=cfg.get("timeout_seconds", 180),
+        max_tokens=cfg["max_tokens"],
+        temperature=cfg.get("temperature"),
     )
-    resp.raise_for_status()
-    data = resp.json()
-    return data["choices"][0]["message"]["content"], data.get("usage", {})
+    result = OpenAICompatibleClient(settings).complete(system=system, user=user)
+    return result.content, result.usage
 
 
 def _strip_code_fence(text: str) -> str:

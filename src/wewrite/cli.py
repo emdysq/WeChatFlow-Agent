@@ -25,6 +25,7 @@ _COMMANDS = {
     "exemplar": ("wewrite.commands.extract_exemplar", "范文风格库（导入 / --list）"),
     "fetch-article": ("wewrite.commands.fetch_article", "公众号文章 URL → Markdown"),
     "llm-write": ("wewrite.commands.llm_write", "混合路由写作（DeepSeek 等出稿）"),
+    "compose": ("wewrite.commands.compose", "主题 + 素材 + 图片一键生成审过的公众号成稿"),
     "similarity": ("wewrite.commands.similarity_check", "多平台版本原创度检查"),
     "run": ("wewrite.commands.run_manager", "独立文章任务：开始 / 恢复 / 完成"),
     "sources": ("wewrite.commands.source_ledger", "记录文章事实来源"),

@@ -1,7 +1,7 @@
 {
   "name": "wechatflow-agent",
-  "description": "WeChatFlow Agent：从选题、任务书与证据到审稿、可接受/拒绝的改稿提案、排版和公众号草稿。",
-  "version": "4.2.1",
+  "description": "WeChatFlow Agent：主题、文档和图片一键生成可审阅成稿、微信排版与公众号草稿。",
+  "version": "4.3.0",
   "skills": [
     "./skills/wewrite",
     "./skills/wewrite-style",

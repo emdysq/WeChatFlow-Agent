@@ -38,6 +38,8 @@ REQUIRED_MODULES = [
     ("yaml", "pyyaml"),
     ("pygments", "Pygments"),
     ("PIL", "Pillow"),
+    ("pypdf", "pypdf"),
+    ("docx", "python-docx"),
 ]
 
 # Humanness weight per check (0 = no humanness impact, higher = more important)
@@ -54,6 +56,7 @@ WEIGHTS = {
     "config_file": 0,
     "wechat_credentials": 0,
     "image_api_key": 0,
+    "writer_api_key": 0,
     "config_permissions": 0,
 }
 
@@ -138,6 +141,15 @@ def check_config():
         checks.append(make_check("config", "image_api_key", "warn",
                                  "missing → image generation will be skipped", impact="skip_image_gen"))
 
+    writer = cfg.get("writer", {}) or {}
+    if writer.get("api_key") or _env_set("WEWRITE_WRITER_API_KEY"):
+        checks.append(make_check("config", "writer_api_key", "pass", "configured"))
+    else:
+        checks.append(make_check(
+            "config", "writer_api_key", "warn",
+            "missing → compose and llm-write unavailable", impact="skip_writer_model",
+        ))
+
     return checks
 
 
@@ -150,7 +162,7 @@ def runtime_flags(checks):
         "skip_publish": warned("wechat_credentials"),
         "skip_image_gen": warned("image_api_key"),
         # 配了写作模型（混合路由）→ Step 4 走 llm_write.py；否则编排器自写
-        "use_writer_model": _env_set("WEWRITE_WRITER_API_KEY"),
+        "use_writer_model": not warned("writer_api_key"),
         # 首次使用是正常设置流程，不是安装失败。
         "needs_onboard": warned("style_file"),
     }

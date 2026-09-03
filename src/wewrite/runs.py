@@ -30,6 +30,8 @@ PROTECTED_ARTIFACTS = {
     "image_prompts",
     "images_manifest",
     "review_report",
+    "materials",
+    "compose_report",
     "sources",
     "preview",
 }
@@ -141,7 +143,7 @@ def create_run(
     directory.mkdir(parents=True, exist_ok=False)
     created = _now()
     state = {
-        "version": 5,
+        "version": 6,
         "run_id": run_id,
         "created": created,
         "updated": created,
@@ -171,6 +173,8 @@ def create_run(
             "image_prompts": str((directory / "image-prompts.md").relative_to(home())),
             "images_manifest": str((directory / "images.json").relative_to(home())),
             "review_report": str((directory / "review-report.json").relative_to(home())),
+            "materials": str((directory / "materials.md").relative_to(home())),
+            "compose_report": str((directory / "compose-report.json").relative_to(home())),
             "sources": str((directory / "sources.yaml").relative_to(home())),
             "preview": str((directory / "preview.html").relative_to(home())),
         },
@@ -224,6 +228,8 @@ def _upgrade_state(state: dict) -> bool:
         "image_prompts": str((directory / "image-prompts.md").relative_to(home())),
         "images_manifest": str((directory / "images.json").relative_to(home())),
         "review_report": str((directory / "review-report.json").relative_to(home())),
+        "materials": str((directory / "materials.md").relative_to(home())),
+        "compose_report": str((directory / "compose-report.json").relative_to(home())),
     }
     changed = False
     collaboration = state.setdefault("collaboration", {})
@@ -234,8 +240,8 @@ def _upgrade_state(state: dict) -> bool:
         if not artifacts.get(key):
             artifacts[key] = value
             changed = True
-    if state.get("version", 1) < 5:
-        state["version"] = 5
+    if state.get("version", 1) < 6:
+        state["version"] = 6
         changed = True
     return changed
 

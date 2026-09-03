@@ -7,6 +7,19 @@ wechat:
   secret: "your_appsecret"
   author: ""  # 默认署名（可选）
 
+# 一键出稿模型（DeepSeek 默认；也可换成 OpenAI-compatible 服务）
+# API Key 只保存在本机 config.yaml，或通过 WEWRITE_WRITER_API_KEY 环境变量注入。
+writer:
+  provider: "deepseek"
+  api_key: "your_deepseek_api_key"
+  base_url: "https://api.deepseek.com"
+  model: "deepseek-v4-flash"
+  reviewer_model: "deepseek-v4-pro"
+  vision_model: "deepseek-v4-flash-vision-exp"
+  timeout_seconds: 180
+  max_tokens: 6000
+  # temperature: 0.8  # DeepSeek thinking 模式下会忽略；其他 provider 可按需配置
+
 # AI 图片生成
 # 支持 10 个 provider，配一个就能用，配多个自动 fallback。
 #
