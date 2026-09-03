@@ -14,7 +14,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,3 +27,15 @@ jobs:
         run: python3 -m pytest tests/ -q
       - name: Context budget guard
         run: python3 scripts/context_budget.py --budget-tokens 15500
+
+  windows-delivery:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package + pytest
+        run: python -m pip install -e . pytest
+      - name: Windows delivery tests
+        run: python -m pytest tests/test_windows_delivery.py -q

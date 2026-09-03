@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -11,7 +12,10 @@ REPO = Path(__file__).resolve().parents[1]
 POWERSHELL = shutil.which("pwsh") or shutil.which("powershell")
 
 
-pytestmark = pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+pytestmark = pytest.mark.skipif(
+    sys.platform != "win32" or POWERSHELL is None,
+    reason="Windows PowerShell delivery test",
+)
 
 
 def _run(*args, env=None):
