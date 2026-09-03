@@ -4,12 +4,12 @@
 
 **从选题、写作、审稿到公众号草稿箱的可审阅 Agent 内容工作流**
 
-Windows 交付 · 一键 AI 出稿 · 修改提案 · 18 套主题 · 微信草稿 · 142 项测试
+Windows 交付 · 一键 AI 出稿 · 修改提案 · 18 套主题 · 微信草稿 · 143 项测试
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2563eb)](LICENSE)
 [![CI](https://github.com/emdysq/WeChatFlow-Agent/actions/workflows/checks.yml/badge.svg)](https://github.com/emdysq/WeChatFlow-Agent/actions/workflows/checks.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-0f766e)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-142%20passed-16a34a)](tests)
+[![Tests](https://img.shields.io/badge/tests-143%20passed-16a34a)](tests)
 [![Canary](https://img.shields.io/badge/WeChat%20draft-canary%20passed-07c160)](WECHAT_CANARY_CHECKLIST.md)
 
 </div>
@@ -146,7 +146,7 @@ Demo 不读取公众号密钥、不联网，依次执行 Markdown 转换、微�
 | 项目 | 结果 |
 |---|---|
 | 上游测试基线 | 112 passed |
-| 当前完整回归 | 142 passed |
+| 当前完整回归 | 143 passed |
 | Windows 生命周期 | install → CLI → uninstall passed |
 | 微信 API Mock | token → 图片 → 封面 → draft/add passed |
 | 真实公众号 Canary | 草稿创建成功，后台人工验收通过 |

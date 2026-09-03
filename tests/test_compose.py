@@ -228,6 +228,35 @@ def test_compose_generates_reviewed_article_preview_and_state(tmp_path, monkeypa
     assert len(captured) == 4
 
 
+def test_compose_topic_only_ignores_invented_image_plan(tmp_path, monkeypatch):
+    monkeypatch.setenv("WEWRITE_HOME", str(tmp_path / "home"))
+    plan = _plan()
+    plan["claims"] = []
+    captured = []
+    client = OpenAICompatibleClient(
+        _settings(vision=False),
+        transport=_transport([
+            json.dumps(plan, ensure_ascii=False),
+            "# 什么是 Agent\n\n## 大白话解释\n\nAgent 是能够围绕目标采取行动的软件系统。",
+            json.dumps(_assessment(), ensure_ascii=False),
+        ], captured),
+    )
+
+    report = compose_article(
+        client=client,
+        topic="什么是 Agent",
+        material_paths=[],
+        image_paths=[],
+        target_words=1000,
+    )
+
+    brief = yaml.safe_load((Path(report["article"]).parent / "brief.yaml").read_text(encoding="utf-8"))
+    assert report["status"] == "completed"
+    assert report["materials"] == {"text_count": 0, "image_count": 0, "skipped": []}
+    assert brief["image_plan"] == []
+    assert len(captured) == 3
+
+
 def test_compose_revises_once_then_rechecks(tmp_path, monkeypatch):
     monkeypatch.setenv("WEWRITE_HOME", str(tmp_path / "home"))
     material = tmp_path / "notes.txt"

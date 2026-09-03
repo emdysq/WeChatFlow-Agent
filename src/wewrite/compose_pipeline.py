@@ -26,7 +26,7 @@ class ComposeNeedsInput(RuntimeError):
 
 _VISION_SYSTEM = """你是内容编辑的图片素材分析助手。只描述图片中明确可见的信息，不猜测人物身份、时间、地点、数据来源或图片外事件。输出 JSON 对象，包含 status、summary、visible_facts、caption、suggested_section。visible_facts 必须是字符串数组。"""
 
-_PLAN_SYSTEM = """你是资深中文公众号策划编辑。只能依据用户素材包规划文章，不能补写未提供的经历、数字、引述或事实。输出 JSON 对象，必须包含 title、target_reader、purpose、core_argument、framework、target_words、sections、claims、image_plan。sections 是含 heading 和 purpose 的对象数组；claims 是含 id、claim、material_refs、kind 的对象数组，kind 只能是 user_provided、inference 或 opinion；image_plan 是含 asset_id、use、caption、after_section 的对象数组。没有材料支持的内容只能标为 inference/opinion。"""
+_PLAN_SYSTEM = """你是资深中文公众号策划编辑。只能依据用户素材包规划文章，不能补写未提供的经历、数字、引述或事实。输出 JSON 对象，必须包含 title、target_reader、purpose、core_argument、framework、target_words、sections、claims、image_plan。sections 是含 heading 和 purpose 的对象数组；claims 是含 id、claim、material_refs、kind 的对象数组，kind 只能是 user_provided、inference 或 opinion；image_plan 是含 asset_id、use、caption、after_section 的对象数组，只能引用素材包中真实存在的图片；素材包没有图片时 image_plan 必须为空。没有材料支持的内容只能标为 inference/opinion。"""
 
 _WRITE_SYSTEM = """你是资深中文公众号作者。严格依据任务书和用户素材写一篇可审阅的 Markdown 文章。不要编造亲历、身份、采访、朋友同事、数字、引述或来源；事实不足时缩小判断并明确边界。标题使用一级标题，正文使用二级标题，语言自然直接，避免空话、重复、口号和机械总结。图片只允许使用任务书中的资产编号，并以 {{IMAGE:IMG1}} 形式单独占一行。只输出正文，不要代码围栏和解释。"""
 
@@ -80,6 +80,11 @@ def _normalize_plan(
         raise ModelResponseError("任务书 claims 必须是数组")
     if not isinstance(image_plan, list):
         raise ModelResponseError("任务书 image_plan 必须是数组")
+    # A model may suggest imaginary stock art even when the user supplied no
+    # images. Topic-only composition is a supported workflow, so discard those
+    # suggestions instead of treating them as broken user references.
+    if not image_ids:
+        image_plan = []
     for section in sections:
         if not isinstance(section, dict) or not all(
             isinstance(section.get(key), str) and section[key].strip()
@@ -109,6 +114,7 @@ def _normalize_plan(
             raise ModelResponseError("任务书 image_plan 引用了不存在的图片")
     value["topic"] = topic
     value["target_words"] = target_words
+    value["image_plan"] = image_plan
     return value
 
 
