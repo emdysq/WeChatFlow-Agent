@@ -222,10 +222,13 @@ class OpenAICompatibleClient:
         }
         if self.settings.temperature is not None:
             payload["temperature"] = self.settings.temperature
+        if self.settings.provider == "deepseek":
+            # Current DeepSeek models enable thinking by default. Composition
+            # needs the final artifact, and shorter responses reduce transport
+            # failures on long-form requests.
+            payload["thinking"] = {"type": "disabled"}
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
-            if self.settings.provider == "deepseek":
-                payload["thinking"] = {"type": "disabled"}
         last_error: Exception | None = None
         for attempt in range(self.settings.retries + 1):
             try:

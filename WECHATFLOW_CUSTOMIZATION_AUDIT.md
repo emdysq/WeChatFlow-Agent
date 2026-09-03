@@ -25,7 +25,7 @@ WeWrite 不是传统 Web SaaS，而是面向 Codex、Claude Code 等 Agent 的�
 
 - 使用 Python 3.12 创建独立 `.venv` 并以 editable 模式安装。
 - 上游原始测试：`112 passed`。
-- 修改后完整测试：`141 passed`。
+- 修改后完整测试：`142 passed`。
 - 上下文预算门：通过，首次运行静态文档约 6,389 tokens。
 - 18 套主题：能够正常发现和加载。
 - `docs/demo-article.md`：成功转换为本地 HTML。
@@ -110,8 +110,9 @@ Prompt 规则不能构成可靠的安全边界。
 - 可审阅修改提案：任务可用 `--review-mode proposal` 启动，候选稿生成 unified diff；用户可
   `accept` 后复制为成稿，或 `reject` 后保留原文。按产品取舍保持简单，不做哈希或冲突校验。
 - 一键 AI 出稿：新增 `compose`，支持常见文档与图片素材、DeepSeek/兼容模型、结构化任务书、
-  两轮审稿、一次自动修改、用户图片插入和微信 HTML 预览；端到端 Mock 已通过，真实 DeepSeek
-  Smoke Test 需用户在本机配置 API Key 后执行。
+  两轮审稿、一次自动修改、用户图片插入和微信 HTML 预览；端到端 Mock 已通过。真实 DeepSeek
+  Smoke Test 使用 2 份文档和 1 张图片生成 2,438 字符成稿，审稿通过，预览检查为 0 错误、
+  0 警告；未创建公众号草稿或正式发布。
 
 ## 6. 建议的功能扩展边界
 

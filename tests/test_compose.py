@@ -175,6 +175,18 @@ def test_model_client_retries_transient_network_failure():
     assert len(attempts) == 2
 
 
+def test_deepseek_disables_thinking_for_plain_text_requests():
+    captured = []
+    client = OpenAICompatibleClient(
+        _settings(vision=False),
+        transport=_transport(["正文"], captured),
+    )
+
+    client.complete(system="system", user="user")
+
+    assert captured[0]["json"]["thinking"] == {"type": "disabled"}
+
+
 def test_compose_generates_reviewed_article_preview_and_state(tmp_path, monkeypatch):
     monkeypatch.setenv("WEWRITE_HOME", str(tmp_path / "home"))
     material = tmp_path / "material.md"

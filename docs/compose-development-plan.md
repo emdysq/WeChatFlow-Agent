@@ -19,8 +19,8 @@ wechatflow compose `
 默认只生成本地成稿与预览，不自动创建公众号草稿，更不自动正式发布或群发。创建草稿继续
 沿用现有的人工确认和 `publish` 命令。
 
-实施状态（2026-09-03）：M1 模型层、M2 素材摄取和 M3 一键编排已完成；M4 的 141 项自动
-测试与本机交付检查已通过，真实 DeepSeek Smoke Test 等待用户在本机配置 API Key。
+实施状态（2026-09-03）：M1 模型层、M2 素材摄取和 M3 一键编排已完成；M4 的 142 项自动
+测试与本机交付检查已通过；真实 DeepSeek Smoke Test 已生成成稿并通过自动审稿及微信预览检查。
 
 ## 2. 研究结论
 
@@ -221,7 +221,7 @@ WEWRITE_VISION_MODEL
 - 更新 README、配置示例和演示命令；
 - 本地完整回归；
 - 推送并等待 Windows/Linux CI；
-- 用户在本机填写 DeepSeek Key 后执行一次真实模型 Smoke Test。
+- 使用本机 DeepSeek 配置执行真实模型 Smoke Test（已通过，未创建微信草稿或正式发布）。
 
 ## 7. 测试矩阵
 
@@ -234,8 +234,8 @@ WEWRITE_VISION_MODEL
 | revise 分支 | 否 | 修改后复审并生成最终报告 |
 | needs_input 分支 | 否 | 不错误标记 completed |
 | 预览兼容性 | 否 | 微信 HTML 无 ERROR |
-| DeepSeek Smoke Test | 是 | 真实生成文章但不发布 |
-| 全量回归 | 否 | 当前 141 项测试全部通过 |
+| DeepSeek Smoke Test | 是 | 已真实生成 2,438 字符文章，审稿通过，未发布 |
+| 全量回归 | 否 | 当前 142 项测试全部通过 |
 
 ## 8. 风险与取舍
 
