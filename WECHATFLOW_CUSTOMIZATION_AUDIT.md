@@ -25,7 +25,7 @@ WeWrite 不是传统 Web SaaS，而是面向 Codex、Claude Code 等 Agent 的�
 
 - 使用 Python 3.12 创建独立 `.venv` 并以 editable 模式安装。
 - 上游原始测试：`112 passed`。
-- 修改后完整测试：`139 passed`。
+- 修改后完整测试：`140 passed`。
 - 上下文预算门：通过，首次运行静态文档约 6,389 tokens。
 - 18 套主题：能够正常发现和加载。
 - `docs/demo-article.md`：成功转换为本地 HTML。

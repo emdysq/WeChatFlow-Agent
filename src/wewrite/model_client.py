@@ -185,10 +185,20 @@ class OpenAICompatibleClient:
         )
 
     def parse_json(self, result: ModelResult) -> dict:
+        content = _strip_fence(result.content).lstrip("\ufeff")
         try:
-            value = json.loads(_strip_fence(result.content))
+            value = json.loads(content)
         except json.JSONDecodeError as exc:
-            raise ModelResponseError("模型没有返回有效 JSON") from exc
+            # Some compatible providers prepend a short explanation even when
+            # JSON mode is requested. Accept the first complete JSON object,
+            # while still validating its structure below.
+            start = content.find("{")
+            if start < 0:
+                raise ModelResponseError("模型没有返回有效 JSON") from exc
+            try:
+                value, _ = json.JSONDecoder().raw_decode(content[start:])
+            except json.JSONDecodeError as nested:
+                raise ModelResponseError("模型没有返回有效 JSON") from nested
         if not isinstance(value, dict):
             raise ModelResponseError("模型 JSON 顶层必须是对象")
         return value
@@ -210,6 +220,8 @@ class OpenAICompatibleClient:
             payload["temperature"] = self.settings.temperature
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
+            if self.settings.provider == "deepseek":
+                payload["thinking"] = {"type": "disabled"}
         try:
             response = self._transport(
                 self.endpoint,

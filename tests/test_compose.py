@@ -148,9 +148,16 @@ def test_model_client_builds_json_and_vision_requests(tmp_path):
     assert client.parse_json(result) == {"ok": True}
     assert client.parse_json(vision)["summary"] == "红色"
     assert captured[0]["json"]["response_format"] == {"type": "json_object"}
+    assert captured[0]["json"]["thinking"] == {"type": "disabled"}
     blocks = captured[1]["json"]["messages"][1]["content"]
     assert blocks[1]["image_url"]["url"].startswith("data:image/png;base64,")
     assert captured[1]["json"]["model"] == "deepseek-v4-flash-vision-exp"
+
+
+def test_model_client_accepts_json_after_provider_explanation():
+    client = OpenAICompatibleClient(_settings(vision=False), transport=lambda *args, **kwargs: None)
+    result = type("Result", (), {"content": "下面是结果：\n{\"ok\": true}\n完成。"})()
+    assert client.parse_json(result) == {"ok": True}
 
 
 def test_compose_generates_reviewed_article_preview_and_state(tmp_path, monkeypatch):
