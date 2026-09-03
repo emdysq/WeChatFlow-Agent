@@ -53,6 +53,12 @@ def _strip_markdown_fence(text: str) -> str:
     return value.strip()
 
 
+def _canonical_material_ref(value: str) -> str:
+    """Accept model-friendly labels such as ``[M1] title`` but store only M1."""
+    match = re.search(r"(?<![A-Z0-9])(IMG\d+|M\d+)(?![A-Z0-9])", value.upper())
+    return match.group(1) if match else value.strip()
+
+
 def _normalize_plan(
     value: dict,
     *,
@@ -90,11 +96,16 @@ def _normalize_plan(
         refs = claim.get("material_refs", [])
         if not isinstance(refs, list) or not all(isinstance(ref, str) for ref in refs):
             raise ModelResponseError("任务书 claim.material_refs 必须是字符串数组")
+        refs = [_canonical_material_ref(ref) for ref in refs]
+        claim["material_refs"] = refs
         unknown_refs = set(refs) - material_ids - image_ids
         if unknown_refs:
             raise ModelResponseError("任务书引用了不存在的素材编号: " + ", ".join(sorted(unknown_refs)))
     for image in image_plan:
-        if not isinstance(image, dict) or image.get("asset_id") not in image_ids:
+        if not isinstance(image, dict) or not isinstance(image.get("asset_id"), str):
+            raise ModelResponseError("任务书 image_plan 引用了不存在的图片")
+        image["asset_id"] = _canonical_material_ref(image["asset_id"])
+        if image["asset_id"] not in image_ids:
             raise ModelResponseError("任务书 image_plan 引用了不存在的图片")
     value["topic"] = topic
     value["target_words"] = target_words

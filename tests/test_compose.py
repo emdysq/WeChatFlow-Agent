@@ -52,13 +52,13 @@ def _plan(include_image=True):
             {"heading": "落地方法", "purpose": "给出步骤"},
         ],
         "claims": [
-            {"id": "C1", "claim": "人工确认点不能省略", "material_refs": ["M1"], "kind": "inference"}
+            {"id": "C1", "claim": "人工确认点不能省略", "material_refs": ["M1 用户材料"], "kind": "inference"}
         ],
         "image_plan": [],
     }
     if include_image:
         value["image_plan"] = [
-            {"asset_id": "IMG1", "use": True, "caption": "流程示意", "after_section": "落地方法"}
+            {"asset_id": "[IMG1] 流程图", "use": True, "caption": "流程示意", "after_section": "落地方法"}
         ]
     return value
 
