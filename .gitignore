@@ -45,6 +45,7 @@ docs/*
 !docs/star-history.svg
 !docs/evals.json
 !docs/content-quality-rubric.md
+!docs/compose-development-plan.md
 CLAUDE.md
 
 # IDE
