@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+import requests
 import yaml
 from PIL import Image
 
@@ -158,6 +159,20 @@ def test_model_client_accepts_json_after_provider_explanation():
     client = OpenAICompatibleClient(_settings(vision=False), transport=lambda *args, **kwargs: None)
     result = type("Result", (), {"content": "下面是结果：\n{\"ok\": true}\n完成。"})()
     assert client.parse_json(result) == {"ok": True}
+
+
+def test_model_client_retries_transient_network_failure():
+    attempts = []
+
+    def flaky(url, **kwargs):
+        attempts.append(url)
+        if len(attempts) == 1:
+            raise requests.exceptions.ChunkedEncodingError("connection ended")
+        return FakeResponse("完成")
+
+    client = OpenAICompatibleClient(_settings(vision=False), transport=flaky)
+    assert client.complete(system="system", user="user").content == "完成"
+    assert len(attempts) == 2
 
 
 def test_compose_generates_reviewed_article_preview_and_state(tmp_path, monkeypatch):

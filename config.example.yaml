@@ -18,6 +18,7 @@ writer:
   vision_model: "deepseek-v4-flash-vision-exp"
   timeout_seconds: 180
   max_tokens: 6000
+  retries: 2
   # temperature: 0.8  # DeepSeek thinking 模式下会忽略；其他 provider 可按需配置
 
 # AI 图片生成

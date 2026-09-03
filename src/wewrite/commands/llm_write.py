@@ -62,6 +62,7 @@ def _load_config() -> dict:
         "temperature": settings.temperature,
         "max_tokens": settings.max_tokens,
         "timeout_seconds": settings.timeout_seconds,
+        "retries": settings.retries,
     }
 
 
@@ -77,6 +78,7 @@ def call_writer(cfg: dict, system: str, user: str) -> tuple[str, dict]:
         timeout_seconds=cfg.get("timeout_seconds", 180),
         max_tokens=cfg["max_tokens"],
         temperature=cfg.get("temperature"),
+        retries=cfg.get("retries", 2),
     )
     result = OpenAICompatibleClient(settings).complete(system=system, user=user)
     return result.content, result.usage

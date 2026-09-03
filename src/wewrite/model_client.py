@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import mimetypes
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -55,6 +56,7 @@ class ModelSettings:
     timeout_seconds: int = 180
     max_tokens: int = 6000
     temperature: float | None = None
+    retries: int = 2
 
     @classmethod
     def from_config(cls, config: dict | None = None) -> "ModelSettings":
@@ -83,10 +85,11 @@ class ModelSettings:
             max_tokens = int(writer.get("max_tokens", 6000))
             raw_temperature = writer.get("temperature")
             temperature = float(raw_temperature) if raw_temperature is not None else None
+            retries = int(writer.get("retries", 2))
         except (TypeError, ValueError) as exc:
             raise ModelConfigurationError("writer 超时、token 或温度配置格式不正确") from exc
-        if timeout <= 0 or max_tokens <= 0:
-            raise ModelConfigurationError("writer.timeout_seconds 和 max_tokens 必须大于 0")
+        if timeout <= 0 or max_tokens <= 0 or not 0 <= retries <= 5:
+            raise ModelConfigurationError("writer 超时、max_tokens 必须大于 0，retries 必须在 0-5 之间")
         return cls(
             provider=provider,
             api_key=api_key,
@@ -97,6 +100,7 @@ class ModelSettings:
             timeout_seconds=timeout,
             max_tokens=max_tokens,
             temperature=temperature,
+            retries=retries,
         )
 
 
@@ -222,21 +226,32 @@ class OpenAICompatibleClient:
             payload["response_format"] = {"type": "json_object"}
             if self.settings.provider == "deepseek":
                 payload["thinking"] = {"type": "disabled"}
-        try:
-            response = self._transport(
-                self.endpoint,
-                headers={
-                    "Authorization": f"Bearer {self.settings.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-                timeout=self.settings.timeout_seconds,
-            )
-            response.raise_for_status()
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
-        except Exception as exc:  # provider/network/schema errors share one CLI boundary
-            raise ModelResponseError(f"模型调用失败: {type(exc).__name__}: {exc}") from exc
+        last_error: Exception | None = None
+        for attempt in range(self.settings.retries + 1):
+            try:
+                response = self._transport(
+                    self.endpoint,
+                    headers={
+                        "Authorization": f"Bearer {self.settings.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                    timeout=self.settings.timeout_seconds,
+                )
+                response.raise_for_status()
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+                break
+            except Exception as exc:  # provider/network/schema errors share one CLI boundary
+                last_error = exc
+                retryable = isinstance(exc, requests.exceptions.RequestException)
+                if isinstance(exc, requests.exceptions.HTTPError) and exc.response is not None:
+                    retryable = exc.response.status_code == 429 or exc.response.status_code >= 500
+                if not retryable or attempt >= self.settings.retries:
+                    raise ModelResponseError(f"模型调用失败: {type(exc).__name__}: {exc}") from exc
+                time.sleep(min(2 ** attempt, 4))
+        else:  # pragma: no cover - loop always raises or breaks
+            raise ModelResponseError(f"模型调用失败: {last_error}")
         if not isinstance(content, str) or not content.strip():
             raise ModelResponseError("模型返回了空内容")
         usage = data.get("usage") if isinstance(data, dict) else {}

@@ -53,7 +53,7 @@ WeChatFlow 是我基于 MIT 开源项目 WeWrite 构建的微信公众号 Agent 
 
 ```text
 上游基线测试：112 passed
-当前完整测试：140 passed
+当前完整测试：141 passed
 一键出稿：文档/图片摄取、模型请求和两轮审稿端到端 Mock passed
 Windows 生命周期：install → CLI → uninstall passed
 微信真实 Canary：token → 永久封面 → draft/add passed
@@ -70,7 +70,7 @@ Python 3.11+、pytest、Markdown/HTML、YAML、Agent Skills、微信公众号 AP
 1. 配置本地模型 Key 后运行 `wechatflow compose`，展示主题和素材到成稿与预览。
 2. 打开一个 run 的 `draft.md`、`proposal.md` 与 `proposal.json`，演示 diff、接受和拒绝。
 3. 运行 `wewrite publish ... --dry-run`，展示发布计划和阻断项。
-4. 展示测试结果 `140 passed`。
+4. 展示测试结果 `141 passed`。
 5. 展示公众号后台中的 Canary 草稿截图时遮挡账号标识和密钥；强调没有群发。
 
 ## 8. 面试高频问题
@@ -104,9 +104,9 @@ Python 3.11+、pytest、Markdown/HTML、YAML、Agent Skills、微信公众号 AP
 - 新增发布 Dry-run、任务产物绑定和微信 API Mock 合约测试；真实跑通 token、永久封面上传
   与 `draft/add`，并由公众号后台人工验收。
 - 修复中文 Windows 控制台编码崩溃，补齐 PowerShell 安装/卸载与离线 Demo；测试由上游
-  112 项扩展至 140 项。
+  112 项扩展至 141 项。
 
 ## 10. 真实性边界
 
-可以说“基于开源项目构建”“真实创建并验收公众号草稿”“补充测试至 140 项”。不能说
+可以说“基于开源项目构建”“真实创建并验收公众号草稿”“补充测试至 141 项”。不能说
 “项目从零开发”“已经正式发布或群发”“已有真实用户增长指标”。
